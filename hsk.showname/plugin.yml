@@ -1,0 +1,6 @@
+name: first_minecraft_plugin
+version: 1.0
+author: hsk
+description: First_Minecraft_Plugin
+
+main: Main.main
