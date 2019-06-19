@@ -1,0 +1,5 @@
+name: HskPlugin
+main: Main
+version: 1.0
+description: AutoMiningPlugin
+api-version: 1.13
