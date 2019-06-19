@@ -1,0 +1,7 @@
+name: HskPlugin
+main: MainCommand
+version: 1.0
+
+commands:
+  hello:
+    description: send hello to player.
