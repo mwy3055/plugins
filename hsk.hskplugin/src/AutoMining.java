@@ -1,15 +1,25 @@
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.Material;
 
 import java.util.Queue;
 import java.util.LinkedList;
 
 public class AutoMining implements Listener {
+    static BlockFace[] faces = new BlockFace[]{
+            BlockFace.UP,
+            BlockFace.DOWN,
+            BlockFace.EAST,
+            BlockFace.WEST,
+            BlockFace.NORTH,
+            BlockFace.SOUTH
+    };
+
     private boolean doAutoMining(Material m) {
         if (m == Material.COAL_ORE ||
                 m == Material.ACACIA_LOG ||
@@ -22,28 +32,43 @@ public class AutoMining implements Listener {
         }
         return false;
     }
+    private boolean facesLava(Block block) {
+        for (BlockFace f : faces) {
+            if (block.getRelative(f).getType() == Material.LAVA)
+                return true;
+        }
+        return false;
+    }
+    private void sendLavaMessage(Player p) {
+        p.sendMessage("[HskPlugin] There is a LAVA near the block");
+    }
 
-    private void doAutoMine(Player p, Location start) {
-        int[][] src = {{1, 0, 0}, {0, 1, 0}, {-1, 0, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
-        Material origin = start.getBlock().getType();
+    private void AutoMine(Player p, Block start) {
+        boolean LavaFlag = false;
+        Material origin = start.getType();
 
-        Queue<Location> q = new LinkedList<>();
+        if(facesLava(start)) {
+            sendLavaMessage(p);
+            return;
+        }
+
+        Queue<Block> q = new LinkedList<>();
         q.add(start);
         while (!q.isEmpty()) {
-            Location cur = q.remove();
+            Block cur = q.remove();
 
-            for (int a = 0; a < 6; a++) {
-                int sx = cur.getBlockX() + src[a][0];
-                int sy = cur.getBlockY() + src[a][1];
-                int sz = cur.getBlockZ() + src[a][2];
+            for (BlockFace f : faces) {
+                Block next = cur.getRelative(f);
+                Material ntype = next.getType();
 
-                Location next = new Location(cur.getWorld(), sx, sy, sz);
-                if(next.getBlock().getType() == Material.LAVA) {
-                    p.sendMessage("[HskPlugin] There is a LAVA near the block");
+                if (ntype == origin && facesLava(next)) {
+                    if(LavaFlag == false) {
+                        sendLavaMessage(p);
+                        LavaFlag = true;
+                    }
                     continue;
-                }
-                else if (next.getBlock().getType() == origin) {
-                    next.getBlock().breakNaturally();
+                } else if (ntype == origin) {
+                    next.breakNaturally();
                     q.add(next);
                 }
             }
@@ -57,12 +82,10 @@ public class AutoMining implements Listener {
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent e) {
-        if (doAutoMining(e.getBlock().getType()) == false) {
+        if (!doAutoMining(e.getBlock().getType())) {
             return;
         }
 
-        Player p = e.getPlayer();
-        Location cur = new Location(p.getWorld(), e.getBlock().getX(), e.getBlock().getY(), e.getBlock().getZ());
-        doAutoMine(p, cur);
+        AutoMine(e.getPlayer(), e.getBlock());
     }
 }
